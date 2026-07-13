@@ -3,157 +3,296 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <meta name="theme-color" content="#0a0a1a">
-    <title>RobDrop - MM2 Casino</title>
-    <link rel="stylesheet" href="style.css">
-    <link rel="manifest" href="manifest.json">
+    <title>RobDrop</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        :root{--bg:#0a0a1a;--card:#1a1a3a;--acc:#ff2d55;--gold:#ffd700;--txt:#fff;--sub:#888}
+        *{margin:0;padding:0;box-sizing:border-box}
+        body{background:var(--bg);color:var(--txt);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;min-height:100vh;-webkit-tap-highlight-color:transparent;user-select:none}
+        .app{max-width:480px;margin:0 auto;padding:16px 16px 90px;display:none}
+        
+        .header{background:linear-gradient(135deg,#12122a,#1a1a3a);border-radius:18px;padding:20px;margin-bottom:12px;border:1px solid rgba(255,255,255,.1)}
+        .user-row{display:flex;align-items:center;gap:12px;margin-bottom:16px}
+        .avatar{width:46px;height:46px;background:var(--acc);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0}
+        .user-name{font-size:17px;font-weight:700}
+        .user-lvl{font-size:11px;color:var(--acc);background:rgba(255,45,85,.2);padding:2px 8px;border-radius:8px;display:inline-block;margin-top:4px}
+        .bal{background:rgba(0,0,0,.35);border-radius:14px;padding:18px;text-align:center;border:1px solid rgba(255,215,0,.2)}
+        .bal-lbl{font-size:10px;color:var(--sub);letter-spacing:1px;margin-bottom:6px}
+        .bal-val{font-size:38px;font-weight:800;color:var(--gold)}
+        
+        .btn{width:100%;padding:18px;border:none;border-radius:14px;color:#fff;font-size:17px;font-weight:700;cursor:pointer;margin-bottom:10px;transition:transform .1s}
+        .btn:active{transform:scale(.96)}
+        .btn-open{background:linear-gradient(135deg,#ff2d55,#ff6b6b);box-shadow:0 4px 25px rgba(255,45,85,.4)}
+        .btn-open span{font-size:12px;opacity:.8;display:block;margin-top:4px}
+        .btn-back{background:#333;margin-top:16px}
+        
+        .grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
+        .gbtn{background:var(--card);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:18px 12px;color:var(--txt);cursor:pointer;text-align:center;transition:all .15s}
+        .gbtn:active{background:#22224a;border-color:var(--acc);transform:scale(.95)}
+        .gbtn .ic{font-size:30px;display:block;margin-bottom:6px}
+        .gbtn .lb{font-size:13px;font-weight:500}
+        
+        .daily{background:linear-gradient(135deg,rgba(255,215,0,.1),rgba(255,149,0,.1));border-radius:14px;padding:16px;display:flex;align-items:center;justify-content:space-between;border:1px solid rgba(255,215,0,.2);margin-bottom:12px}
+        .daily-l{display:flex;align-items:center;gap:10px}
+        .daily-ic{font-size:28px}
+        .daily-tx{font-weight:600;color:var(--gold);font-size:14px}
+        .daily-btn{background:linear-gradient(135deg,#ffd700,#ffaa00);border:none;padding:10px 20px;border-radius:10px;color:#000;font-weight:700;cursor:pointer;font-size:13px}
+        .daily-btn:active{transform:scale(.95)}
+        .daily-btn.done{background:#555;color:#999;pointer-events:none}
+        
+        .title{font-size:19px;font-weight:700;margin-bottom:14px}
+        
+        .wcard{background:var(--card);border-radius:14px;padding:14px;display:flex;align-items:center;gap:12px;margin-bottom:8px;border:1px solid rgba(255,255,255,.05);transition:all .15s}
+        .wcard:active{border-color:var(--acc);transform:scale(.98)}
+        .wcard.ancient{border-color:#f44336;animation:aglow 2s infinite}
+        @keyframes aglow{0%,100%{box-shadow:0 0 5px rgba(244,67,54,.2)}50%{box-shadow:0 0 20px rgba(244,67,54,.4)}}
+        .wic{font-size:38px;width:52px;height:52px;background:rgba(255,255,255,.05);border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+        .winf{flex:1}
+        .wname{font-weight:600;margin-bottom:4px}
+        .wtier{font-size:9px;padding:2px 7px;border-radius:4px;display:inline-block;color:#fff;text-transform:uppercase;font-weight:600;letter-spacing:.5px;margin-bottom:4px}
+        .t1{background:#9e9e9e}.t2{background:#4caf50}.t3{background:#2196f3}.t4{background:#9c27b0}.t5{background:#ff9800}.t6{background:#f44336}
+        .wprice{color:var(--gold);font-size:13px;font-weight:600}
+        .wcnt{background:var(--acc);color:#fff;border-radius:50%;width:30px;height:30px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;flex-shrink:0}
+        .sbtn{background:#ff3b30;color:#fff;border:none;padding:9px 16px;border-radius:10px;font-size:12px;font-weight:600;cursor:pointer}
+        .bbtn{background:#4caf50;color:#fff;border:none;padding:9px 16px;border-radius:10px;font-size:12px;font-weight:600;cursor:pointer}
+        .ubtn{background:var(--acc);color:#fff;border:none;padding:9px 16px;border-radius:10px;font-size:12px;font-weight:600;cursor:pointer}
+        .sbtn:active,.bbtn:active,.ubtn:active{transform:scale(.93)}
+        
+        .empty{text-align:center;padding:50px 20px;color:var(--sub)}
+        .empty-ic{font-size:50px;margin-bottom:14px}
+        
+        .screen{display:none;animation:in .25s}
+        .screen.on{display:block}
+        @keyframes in{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+        
+        .nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;background:rgba(10,10,26,.97);border-top:1px solid rgba(255,255,255,.1);display:flex;justify-content:space-around;padding:8px 0 14px;z-index:50}
+        .nav-i{background:none;border:none;color:#555;display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;padding:6px 10px;transition:all .2s;font-size:10px;font-weight:600}
+        .nav-i.on{color:var(--acc)}
+        .nav-ic{font-size:22px}
+        
+        .modal{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.85);z-index:100;display:flex;align-items:center;justify-content:center}
+        .mbox{background:#1a1a3a;border-radius:22px;padding:28px 24px;text-align:center;max-width:320px;width:90%;border:1px solid rgba(255,255,255,.1);animation:pop .3s}
+        @keyframes pop{from{transform:scale(.8);opacity:0}to{transform:scale(1);opacity:1}}
+        .mem{font-size:70px;margin-bottom:14px}
+        .mtitle{font-size:22px;font-weight:700;margin-bottom:8px}
+        .mprice{color:var(--gold);font-size:18px;margin:14px 0}
+        .mbtn{width:100%;padding:14px;background:var(--acc);border:none;border-radius:14px;color:#fff;font-size:16px;font-weight:600;cursor:pointer}
+        
+        .toast{position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#1a1a3a;border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:14px 26px;color:#fff;font-weight:500;z-index:200;font-size:14px}
+        
+        .loader{position:fixed;top:0;left:0;width:100%;height:100%;background:var(--bg);display:flex;align-items:center;justify-content:center;z-index:999}
+        .ld-ic{font-size:70px;animation:bounce .8s infinite}
+        @keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-20px)}}
+    </style>
 </head>
 <body>
-    <!-- Splash Screen -->
-    <div id="splash" class="splash-screen">
-        <div class="splash-content">
-            <div class="splash-logo">🎰</div>
-            <div class="splash-title">RobDrop</div>
-            <div class="loading-bar">
-                <div class="loading-fill"></div>
-            </div>
-            <div class="splash-subtitle">Загрузка...</div>
+    <div class="loader" id="loader">
+        <div style="text-align:center">
+            <div class="ld-ic">🎰</div>
+            <div style="color:#ffd700;font-size:22px;font-weight:bold;margin-top:16px">RobDrop</div>
         </div>
     </div>
-
-    <!-- Основное приложение -->
-    <div id="app" class="app-container hidden">
-        <!-- Навигация -->
-        <nav class="bottom-nav">
-            <button class="nav-btn active" data-screen="home">
-                <span class="nav-icon">🏠</span>
-                <span class="nav-label">Главная</span>
-            </button>
-            <button class="nav-btn" data-screen="inventory">
-                <span class="nav-icon">🎒</span>
-                <span class="nav-label">Инвентарь</span>
-            </button>
-            <button class="nav-btn" data-screen="case">
-                <span class="nav-icon">🎁</span>
-                <span class="nav-label">Кейсы</span>
-            </button>
-            <button class="nav-btn" data-screen="shop">
-                <span class="nav-icon">🏪</span>
-                <span class="nav-label">Магазин</span>
-            </button>
-            <button class="nav-btn" data-screen="profile">
-                <span class="nav-icon">👤</span>
-                <span class="nav-label">Профиль</span>
-            </button>
-        </nav>
-
-        <!-- Экраны -->
-        <div class="screens-container">
-            <!-- Главный экран -->
-            <div id="home-screen" class="screen active">
-                <div class="header-section">
-                    <div class="user-welcome">
-                        <div class="user-avatar" id="user-avatar">👤</div>
-                        <div>
-                            <div class="user-name" id="user-name">Игрок</div>
-                            <div class="user-level">Уровень 1</div>
-                        </div>
-                    </div>
-                    <div class="balance-card">
-                        <div class="balance-label">Баланс</div>
-                        <div class="balance-amount">
-                            <span class="coin-icon">💰</span>
-                            <span id="coins-display">500</span>
-                        </div>
+    
+    <div class="app" id="app">
+        <div id="home" class="screen on">
+            <div class="header">
+                <div class="user-row">
+                    <div class="avatar" id="av">👤</div>
+                    <div>
+                        <div class="user-name" id="un">Игрок</div>
+                        <span class="user-lvl">Уровень 1</span>
                     </div>
                 </div>
-
-                <div class="daily-reward" id="daily-reward">
-                    <div class="daily-info">
-                        <span class="daily-icon">🎁</span>
-                        <span class="daily-text">Ежедневная награда</span>
-                    </div>
-                    <button class="daily-btn" id="daily-btn" onclick="claimDaily()">
-                        Забрать
-                    </button>
-                </div>
-
-                <div class="quick-actions">
-                    <button class="quick-btn case-btn" onclick="openCaseAnimation()">
-                        <span class="quick-icon">🎁</span>
-                        <span>Открыть кейс</span>
-                        <span class="quick-price">100 💰</span>
-                    </button>
-                    
-                    <div class="quick-grid">
-                        <button class="quick-btn" onclick="switchScreen('upgrade')">
-                            <span class="quick-icon">⬆️</span>
-                            <span>Апгрейд</span>
-                        </button>
-                        <button class="quick-btn" onclick="switchScreen('trade')">
-                            <span class="quick-icon">🔄</span>
-                            <span>Обмен</span>
-                        </button>
-                        <button class="quick-btn" onclick="switchScreen('top')">
-                            <span class="quick-icon">🏆</span>
-                            <span>Топ</span>
-                        </button>
-                        <button class="quick-btn" onclick="switchScreen('friends')">
-                            <span class="quick-icon">👥</span>
-                            <span>Друзья</span>
-                        </button>
-                    </div>
-                </div>
-
-                <div class="recent-section">
-                    <h3>🎯 Последние дропы</h3>
-                    <div id="recent-drops" class="recent-list"></div>
+                <div class="bal">
+                    <div class="bal-lbl">Баланс</div>
+                    <div class="bal-val">💰 <span id="coins">500</span></div>
                 </div>
             </div>
-
-            <!-- Экран инвентаря -->
-            <div id="inventory-screen" class="screen">
-                <div class="screen-header">
-                    <h2>🎒 Инвентарь</h2>
-                    <div class="inventory-stats">
-                        <span id="total-items">0 предметов</span>
-                    </div>
-                </div>
-                
-                <div class="tier-filters">
-                    <button class="tier-btn active" onclick="filterInventory('all')">Все</button>
-                    <button class="tier-btn common" onclick="filterInventory('common')">⚪</button>
-                    <button class="tier-btn uncommon" onclick="filterInventory('uncommon')">🟢</button>
-                    <button class="tier-btn rare" onclick="filterInventory('rare')">🔵</button>
-                    <button class="tier-btn epic" onclick="filterInventory('epic')">🟣</button>
-                    <button class="tier-btn legendary" onclick="filterInventory('legendary')">🟡</button>
-                    <button class="tier-btn ancient" onclick="filterInventory('ancient')">🔴</button>
-                </div>
-                
-                <div id="inventory-list" class="inventory-grid"></div>
+            
+            <button class="btn btn-open" onclick="openCase()">
+                🎁 Открыть кейс
+                <span>100 💰</span>
+            </button>
+            
+            <div class="grid2">
+                <button class="gbtn" onclick="show('inv')"><span class="ic">🎒</span><span class="lb">Инвентарь</span></button>
+                <button class="gbtn" onclick="show('shop')"><span class="ic">🏪</span><span class="lb">Магазин</span></button>
+                <button class="gbtn" onclick="show('upg')"><span class="ic">⬆️</span><span class="lb">Апгрейд</span></button>
+                <button class="gbtn" onclick="show('prof')"><span class="ic">👤</span><span class="lb">Профиль</span></button>
             </div>
-
-            <!-- Другие экраны... -->
+            
+            <div class="daily">
+                <div class="daily-l"><span class="daily-ic">🎁</span><span class="daily-tx">Ежедневный бонус</span></div>
+                <button class="daily-btn" id="dbtn" onclick="daily()">Забрать</button>
+            </div>
         </div>
+        
+        <div id="inv" class="screen"><div class="title">🎒 Инвентарь</div><div id="invlist"></div><button class="btn btn-back" onclick="show('home')">← На главную</button></div>
+        <div id="shop" class="screen"><div class="title">🏪 Магазин</div><div id="shoplist"></div><button class="btn btn-back" onclick="show('home')">← На главную</button></div>
+        <div id="upg" class="screen"><div class="title">⬆️ Апгрейд</div><div id="upglist"></div><button class="btn btn-back" onclick="show('home')">← На главную</button></div>
+        <div id="prof" class="screen"><div class="title">👤 Профиль</div><div id="proflist"></div><button class="btn btn-back" onclick="show('home')">← На главную</button></div>
     </div>
-
-    <!-- Модальное окно -->
-    <div id="modal" class="modal hidden">
-        <div class="modal-backdrop" onclick="closeModal()"></div>
-        <div class="modal-container">
-            <div class="modal-header">
-                <h3 id="modal-title"></h3>
-                <button class="modal-close" onclick="closeModal()">✕</button>
-            </div>
-            <div id="modal-content" class="modal-body"></div>
-        </div>
+    
+    <div class="nav">
+        <button class="nav-i on" onclick="show('home')"><span class="nav-ic">🏠</span>Главная</button>
+        <button class="nav-i" onclick="show('inv')"><span class="nav-ic">🎒</span>Инвентарь</button>
+        <button class="nav-i" onclick="show('shop')"><span class="nav-ic">🏪</span>Магазин</button>
+        <button class="nav-i" onclick="show('prof')"><span class="nav-ic">👤</span>Профиль</button>
     </div>
-
-    <!-- Тосты -->
-    <div id="toast-container" class="toast-container"></div>
-
-    <script src="api.js"></script>
-    <script src="app.js"></script>
+    
+    <script>
+        const tg=window.Telegram.WebApp;
+        
+        const W={
+            wooden_sword:{n:'Деревянный Меч',t:1,tn:'Common',e:'⚪',p:10,c:15},
+            rusty_knife:{n:'Ржавый Нож',t:1,tn:'Common',e:'⚪',p:15,c:15},
+            plastic_gun:{n:'Пластиковый Пистолет',t:1,tn:'Common',e:'⚪',p:12,c:15},
+            hunting_knife:{n:'Охотничий Нож',t:2,tn:'Uncommon',e:'🟢',p:50,c:10},
+            pistol:{n:'Пистолет',t:2,tn:'Uncommon',e:'🟢',p:45,c:10},
+            baton:{n:'Дубинка',t:2,tn:'Uncommon',e:'🟢',p:40,c:5},
+            samurai_sword:{n:'Самурайский Меч',t:3,tn:'Rare',e:'🔵',p:200,c:6},
+            revolver:{n:'Револьвер',t:3,tn:'Rare',e:'🔵',p:180,c:5},
+            combat_knife:{n:'Боевой Нож',t:3,tn:'Rare',e:'🔵',p:160,c:4},
+            flame_sword:{n:'Огненный Меч',t:4,tn:'Epic',e:'🟣',p:800,c:3},
+            desert_eagle:{n:'Пустынный Орёл',t:4,tn:'Epic',e:'🟣',p:750,c:3},
+            tactical_knife:{n:'Тактический Нож',t:4,tn:'Epic',e:'🟣',p:700,c:2},
+            frost_blade:{n:'Ледяной Клинок',t:5,tn:'Legendary',e:'🟡',p:3000,c:2},
+            golden_gun:{n:'Золотой Пистолет',t:5,tn:'Legendary',e:'🟡',p:2800,c:2},
+            shadow_dagger:{n:'Теневой Кинжал',t:5,tn:'Legendary',e:'🟡',p:2600,c:1},
+            phoenix_blade:{n:'Клинок Феникса',t:6,tn:'Ancient',e:'🔴',p:12000,c:1},
+            dragon_slayer:{n:'Убийца Драконов',t:6,tn:'Ancient',e:'🔴',p:15000,c:.7},
+            void_reaver:{n:'Жнец Бездны',t:6,tn:'Ancient',e:'🔴',p:18000,c:.3}
+        };
+        
+        let G={coins:500,inv:{},opened:0,ld:null};
+        
+        function save(){localStorage.setItem('rd',JSON.stringify(G))}
+        function load(){let d=localStorage.getItem('rd');if(d)G=JSON.parse(d)}
+        function up(){document.getElementById('coins').textContent=G.coins;let t=new Date().toDateString();let b=document.getElementById('dbtn');if(G.ld===t){b.textContent='✓';b.classList.add('done')}}
+        function toast(m){let t=document.createElement('div');t.className='toast';t.textContent=m;document.body.appendChild(t);setTimeout(()=>t.remove(),1800)}
+        
+        function show(s){
+            document.querySelectorAll('.screen').forEach(e=>e.classList.remove('on'));
+            document.getElementById(s).classList.add('on');
+            document.querySelectorAll('.nav-i').forEach(e=>e.classList.remove('on'));
+            if(s==='inv'){renderInv();document.querySelectorAll('.nav-i')[1].classList.add('on')}
+            else if(s==='shop'){renderShop();document.querySelectorAll('.nav-i')[2].classList.add('on')}
+            else if(s==='upg'){renderUpg()}
+            else if(s==='prof'){renderProf();document.querySelectorAll('.nav-i')[3].classList.add('on')}
+            else{document.querySelectorAll('.nav-i')[0].classList.add('on')}
+        }
+        
+        function drop(){
+            let total=Object.values(W).reduce((s,w)=>s+w.c,0);
+            let r=Math.random()*total,cum=0;
+            for(let[id,w]of Object.entries(W)){cum+=w.c;if(r<=cum)return{id,...w}}
+            return{id:'wooden_sword',...W.wooden_sword}
+        }
+        
+        function openCase(){
+            if(G.coins<100){toast('❌ Мало монет!');return}
+            G.coins-=100;G.opened++;
+            let w=drop();
+            if(!G.inv[w.id])G.inv[w.id]=0;G.inv[w.id]++;
+            save();up();
+            let m=document.createElement('div');m.className='modal';
+            m.innerHTML=`<div class="mbox"><div class="mem">${w.e}</div><div class="mtitle">${w.n}</div><span class="wtier t${w.t}">${w.tn}</span><div class="mprice">💎 ${w.p} монет</div><button class="mbtn" onclick="this.closest('.modal').remove()">Круто!</button></div>`;
+            document.body.appendChild(m);
+            if(tg.HapticFeedback)tg.HapticFeedback.notificationOccurred('success')
+        }
+        
+        function renderInv(){
+            let items=Object.entries(G.inv);
+            let l=document.getElementById('invlist');
+            if(!items.length){l.innerHTML='<div class="empty"><div class="empty-ic">🎒</div><p>Пусто</p></div>';return}
+            l.innerHTML=items.sort((a,b)=>W[b[0]].t-W[a[0]].t).map(([id,q])=>{
+                let w=W[id];
+                return`<div class="wcard${w.t===6?' ancient':''}"><div class="wic">${w.e}</div><div class="winf"><div class="wname">${w.n}</div><span class="wtier t${w.t}">${w.tn}</span><div class="wprice">💎 ${w.p}</div></div><div class="wcnt">${q}</div><button class="sbtn" onclick="sell('${id}')">💰</button></div>`
+            }).join('')
+        }
+        
+        function sell(id){
+            let w=W[id],p=Math.floor(w.p/2);
+            G.coins+=p;G.inv[id]--;
+            if(G.inv[id]<=0)delete G.inv[id];
+            save();up();renderInv();toast(`+${p} 💰`);
+            if(tg.HapticFeedback)tg.HapticFeedback.notificationOccurred('success')
+        }
+        
+        function renderShop(){
+            document.getElementById('shoplist').innerHTML=Object.entries(W).sort((a,b)=>a[1].t-b[1].t).map(([id,w])=>
+                `<div class="wcard"><div class="wic">${w.e}</div><div class="winf"><div class="wname">${w.n}</div><span class="wtier t${w.t}">${w.tn}</span><div class="wprice">💎 ${w.p}</div></div><button class="bbtn" onclick="buy('${id}')">Купить</button></div>`
+            ).join('')
+        }
+        
+        function buy(id){
+            let w=W[id];
+            if(G.coins<w.p){toast('❌ Мало монет!');return}
+            G.coins-=w.p;
+            if(!G.inv[id])G.inv[id]=0;G.inv[id]++;
+            save();up();renderShop();toast('Куплено: '+w.n)
+        }
+        
+        function renderUpg(){
+            let items=Object.entries(G.inv).filter(([id,q])=>q>=3&&W[id].t<6);
+            let l=document.getElementById('upglist');
+            if(!items.length){l.innerHTML='<div class="empty"><div class="empty-ic">⬆️</div><p>Нужно 3 одинаковых</p></div>';return}
+            l.innerHTML=items.map(([id,q])=>{
+                let w=W[id];
+                return`<div class="wcard"><div class="wic">${w.e}</div><div class="winf"><div class="wname">${w.n}</div><span class="wtier t${w.t}">${w.tn}</span><div>×${q}</div></div><button class="ubtn" onclick="upgrade('${id}')">Улучшить</button></div>`
+            }).join('')
+        }
+        
+        function upgrade(id){
+            let w=W[id];
+            G.inv[id]-=3;
+            if(G.inv[id]<=0)delete G.inv[id];
+            let next=Object.entries(W).filter(([i,wd])=>wd.t===w.t+1);
+            let nw=next[Math.floor(Math.random()*next.length)];
+            if(!G.inv[nw[0]])G.inv[nw[0]]=0;G.inv[nw[0]]++;
+            save();up();renderUpg();toast('Улучшено: '+nw[1].n)
+        }
+        
+        function renderProf(){
+            let total=Object.values(G.inv).reduce((a,b)=>a+b,0);
+            document.getElementById('proflist').innerHTML=`
+                <div style="text-align:center;padding:20px">
+                    <div style="font-size:60px;margin-bottom:12px">👤</div>
+                    <h3 id="pun" style="margin-bottom:16px"></h3>
+                    <div style="background:var(--card);border-radius:14px;padding:18px;margin-bottom:10px"><div style="font-size:28px;color:var(--gold);font-weight:700">💰 ${G.coins}</div><div style="color:var(--sub);font-size:12px">Баланс</div></div>
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+                        <div style="background:var(--card);border-radius:12px;padding:14px"><div style="font-size:22px;font-weight:700;color:var(--acc)">${total}</div><div style="color:var(--sub);font-size:11px">Предметов</div></div>
+                        <div style="background:var(--card);border-radius:12px;padding:14px"><div style="font-size:22px;font-weight:700;color:var(--acc)">${Object.keys(G.inv).length}</div><div style="color:var(--sub);font-size:11px">Уникальных</div></div>
+                        <div style="background:var(--card);border-radius:12px;padding:14px"><div style="font-size:22px;font-weight:700;color:var(--acc)">${G.opened}</div><div style="color:var(--sub);font-size:11px">Кейсов</div></div>
+                        <div style="background:var(--card);border-radius:12px;padding:14px"><div style="font-size:22px;font-weight:700;color:var(--acc)">18</div><div style="color:var(--sub);font-size:11px">Всего оружия</div></div>
+                    </div>
+                </div>
+            `
+        }
+        
+        function daily(){
+            let t=new Date().toDateString();
+            if(G.ld===t){toast('Уже получено!');return}
+            let b=Math.floor(Math.random()*400)+100;
+            G.coins+=b;G.ld=t;save();up();toast('+'+b+' 💰')
+        }
+        
+        // Инициализация
+        load();up();
+        tg.ready();tg.expand();
+        
+        let u=tg.initDataUnsafe?.user;
+        if(u){
+            document.getElementById('un').textContent=u.first_name||'Игрок';
+            document.getElementById('pun').textContent=u.first_name||'Игрок';
+            if(u.photo_url){document.getElementById('av').innerHTML=`<img src="${u.photo_url}" style="width:100%;height:100%;border-radius:50%">`}
+        }
+        
+        // Убираем загрузку
+        setTimeout(()=>{
+            document.getElementById('loader').style.display='none';
+            document.getElementById('app').style.display='block';
+        },300);
+    </script>
 </body>
 </html>
