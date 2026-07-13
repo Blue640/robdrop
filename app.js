@@ -1,123 +1,153 @@
-// Инициализация Telegram Web App
+// Инициализация
 const tg = window.Telegram.WebApp;
-tg.expand();
-tg.enableClosingConfirmation();
+const api = new GameAPI();
 
-// Данные оружия
-const WEAPONS = {
-    wooden_sword: { name: 'Деревянный Меч', tier: 1, tierName: 'Common', emoji: '⚪', price: 10, chance: 0.15 },
-    rusty_knife: { name: 'Ржавый Нож', tier: 1, tierName: 'Common', emoji: '⚪', price: 15, chance: 0.15 },
-    plastic_gun: { name: 'Пластиковый Пистолет', tier: 1, tierName: 'Common', emoji: '⚪', price: 12, chance: 0.15 },
-    hunting_knife: { name: 'Охотничий Нож', tier: 2, tierName: 'Uncommon', emoji: '🟢', price: 50, chance: 0.10 },
-    pistol: { name: 'Пистолет', tier: 2, tierName: 'Uncommon', emoji: '🟢', price: 45, chance: 0.10 },
-    baton: { name: 'Дубинка', tier: 2, tierName: 'Uncommon', emoji: '🟢', price: 40, chance: 0.05 },
-    samurai_sword: { name: 'Самурайский Меч', tier: 3, tierName: 'Rare', emoji: '🔵', price: 200, chance: 0.06 },
-    revolver: { name: 'Револьвер', tier: 3, tierName: 'Rare', emoji: '🔵', price: 180, chance: 0.05 },
-    combat_knife: { name: 'Боевой Нож', tier: 3, tierName: 'Rare', emoji: '🔵', price: 160, chance: 0.04 },
-    flame_sword: { name: 'Огненный Меч', tier: 4, tierName: 'Epic', emoji: '🟣', price: 800, chance: 0.03 },
-    desert_eagle: { name: 'Пустынный Орёл', tier: 4, tierName: 'Epic', emoji: '🟣', price: 750, chance: 0.03 },
-    tactical_knife: { name: 'Тактический Нож', tier: 4, tierName: 'Epic', emoji: '🟣', price: 700, chance: 0.02 },
-    frost_blade: { name: 'Ледяной Клинок', tier: 5, tierName: 'Legendary', emoji: '🟡', price: 3000, chance: 0.02 },
-    golden_gun: { name: 'Золотой Пистолет', tier: 5, tierName: 'Legendary', emoji: '🟡', price: 2800, chance: 0.02 },
-    shadow_dagger: { name: 'Теневой Кинжал', tier: 5, tierName: 'Legendary', emoji: '🟡', price: 2600, chance: 0.01 },
-    phoenix_blade: { name: 'Клинок Феникса', tier: 6, tierName: 'Ancient', emoji: '🔴', price: 12000, chance: 0.01 },
-    dragon_slayer: { name: 'Убийца Драконов', tier: 6, tierName: 'Ancient', emoji: '🔴', price: 15000, chance: 0.007 },
-    void_reaver: { name: 'Жнец Бездны', tier: 6, tierName: 'Ancient', emoji: '🔴', price: 18000, chance: 0.003 }
-};
-
-// Состояние игры
+// Глобальное состояние игры
 let gameState = {
     coins: 500,
     inventory: {},
-    casesOpened: 0,
-    lastDaily: null
+    cases_opened: 0,
+    total_earned: 0,
+    last_daily: null,
+    recent_drops: [],
+    transactions: []
 };
 
-// Загрузка сохранения
-function loadGame() {
-    const saved = localStorage.getItem('robdrop_save');
-    if (saved) {
-        gameState = JSON.parse(saved);
-    }
-}
-
-// Сохранение игры
-function saveGame() {
-    localStorage.setItem('robdrop_save', JSON.stringify(gameState));
-}
-
-// Показ экрана
-function showScreen(screenId) {
-    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-    document.getElementById(screenId).classList.add('active');
+// Инициализация приложения
+async function initApp() {
+    // Показываем сплеш
+    showSplash();
     
-    switch(screenId) {
-        case 'inventory-screen':
+    // Инициализируем API
+    await api.init();
+    
+    // Загружаем данные
+    const data = api.loadFromLocal();
+    if (data) {
+        gameState = { ...gameState, ...data };
+    }
+    
+    // Настраиваем Telegram
+    tg.expand();
+    tg.ready();
+    tg.enableClosingConfirmation();
+    
+    // Устанавливаем данные пользователя
+    const user = tg.initDataUnsafe?.user;
+    if (user) {
+        document.getElementById('user-name').textContent = user.first_name || 'Игрок';
+        if (user.photo_url) {
+            document.getElementById('user-avatar').style.backgroundImage = `url(${user.photo_url})`;
+            document.getElementById('user-avatar').textContent = '';
+        }
+    }
+    
+    // Обновляем UI
+    updateUI();
+    renderRecentDrops();
+    
+    // Показываем приложение
+    setTimeout(() => {
+        hideSplash();
+        showScreen('home');
+    }, 2000);
+}
+
+function showSplash() {
+    document.getElementById('splash').classList.remove('hidden');
+    document.getElementById('app').classList.add('hidden');
+}
+
+function hideSplash() {
+    document.getElementById('splash').style.opacity = '0';
+    setTimeout(() => {
+        document.getElementById('splash').classList.add('hidden');
+        document.getElementById('app').classList.remove('hidden');
+    }, 500);
+}
+
+// Переключение экранов
+function showScreen(screenName) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById(`${screenName}-screen`).classList.add('active');
+    
+    // Обновляем навигацию
+    document.querySelectorAll('.nav-btn').forEach(btn => {
+        btn.classList.remove('active');
+        if (btn.dataset.screen === screenName) {
+            btn.classList.add('active');
+        }
+    });
+    
+    // Обновляем контент экрана
+    switch(screenName) {
+        case 'inventory':
             renderInventory();
             break;
-        case 'shop-screen':
+        case 'case':
+            renderCaseScreen();
+            break;
+        case 'shop':
             renderShop();
             break;
-        case 'upgrade-screen':
-            renderUpgrade();
-            break;
-        case 'profile-screen':
+        case 'profile':
             renderProfile();
             break;
     }
 }
 
-// Обновление баланса
-function updateBalance() {
-    document.getElementById('coins-display').textContent = gameState.coins;
-}
+// Навигация
+document.querySelectorAll('.nav-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        showScreen(btn.dataset.screen);
+    });
+});
 
-// Toast уведомление
-function showToast(message) {
-    const toast = document.createElement('div');
-    toast.className = 'toast';
-    toast.textContent = message;
-    document.body.appendChild(toast);
-    setTimeout(() => toast.remove(), 2000);
-}
-
-// Генерация дропа
-function generateDrop() {
-    const totalChance = Object.values(WEAPONS).reduce((sum, w) => sum + w.chance, 0);
-    let rand = Math.random() * totalChance;
-    let cumulative = 0;
+// Обновление UI
+function updateUI() {
+    document.getElementById('coins-display').textContent = formatNumber(gameState.coins);
+    document.getElementById('total-items').textContent = 
+        `${getTotalItems()} предметов`;
     
-    for (const [id, weapon] of Object.entries(WEAPONS)) {
-        cumulative += weapon.chance;
-        if (rand <= cumulative) return { id, ...weapon };
+    // Ежедневный бонус
+    const today = new Date().toDateString();
+    const dailyBtn = document.getElementById('daily-btn');
+    if (gameState.last_daily === today) {
+        dailyBtn.textContent = 'Получено ✓';
+        dailyBtn.classList.add('claimed');
     }
-    
-    return { id: 'wooden_sword', ...WEAPONS.wooden_sword };
+}
+
+function formatNumber(num) {
+    return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+}
+
+function getTotalItems() {
+    return Object.values(gameState.inventory).reduce((a, b) => a + b, 0);
 }
 
 // Открытие кейса
-function openCase() {
+async function openCaseAnimation() {
     if (gameState.coins < 100) {
-        showToast('Недостаточно монет!');
+        showToast('Недостаточно монет! 😢', 'error');
         return;
     }
     
-    showScreen('case-screen');
-    
     // Списываем монеты
     gameState.coins -= 100;
-    gameState.casesOpened++;
-    updateBalance();
+    gameState.cases_opened++;
+    updateUI();
     
     // Анимация
-    const animation = document.getElementById('case-animation');
-    const result = document.getElementById('case-result');
-    const resultWeapon = document.getElementById('result-weapon');
+    showModal('case-opening', `
+        <div class="case-animation-container">
+            <div class="case-box-animated">📦</div>
+            <div class="case-sparkles">✨</div>
+        </div>
+    `);
     
-    animation.classList.remove('hidden');
-    result.classList.add('hidden');
-    
-    setTimeout(() => {
+    // Генерируем дроп через 2 секунды
+    setTimeout(async () => {
         const weapon = generateDrop();
         
         // Добавляем в инвентарь
@@ -126,299 +156,197 @@ function openCase() {
         }
         gameState.inventory[weapon.id]++;
         
+        // Добавляем в историю
+        gameState.recent_drops.unshift({
+            weapon: weapon,
+            timestamp: new Date().toISOString()
+        });
+        if (gameState.recent_drops.length > 10) {
+            gameState.recent_drops.pop();
+        }
+        
+        // Транзакция
+        gameState.transactions.push({
+            type: 'open_case',
+            weapon_id: weapon.id,
+            coins: -100,
+            timestamp: new Date().toISOString()
+        });
+        
+        // Сохраняем
         saveGame();
         
-        // Показываем результат
-        resultWeapon.innerHTML = `
-            <div class="weapon-emoji" style="font-size: 64px;">${weapon.emoji}</div>
-            <h3>${weapon.name}</h3>
-            <span class="weapon-tier tier-${weapon.tierName.toLowerCase()}">${weapon.tierName}</span>
-            <p style="color: var(--gold); margin-top: 8px;">💎 ${weapon.price} монет</p>
-        `;
+        // Синхронизируем с сервером
+        await api.syncToServer(gameState);
         
-        animation.classList.add('hidden');
-        result.classList.remove('hidden');
+        // Показываем результат
+        showModal('drop-result', `
+            <div class="drop-result-container">
+                <div class="drop-weapon-icon">${weapon.emoji}</div>
+                <h2>${weapon.name}</h2>
+                <span class="weapon-tier-badge tier-${weapon.tierName.toLowerCase()}">
+                    ${weapon.tierName}
+                </span>
+                <p class="drop-price">💎 ${weapon.price} монет</p>
+                <button class="btn-action-large" onclick="closeModal(); showScreen('inventory');">
+                    В инвентарь
+                </button>
+            </div>
+        `, false);
         
         tg.HapticFeedback.notificationOccurred('success');
     }, 2000);
 }
 
-// Рендер инвентаря
-function renderInventory(filter = 'all') {
-    const container = document.getElementById('inventory-list');
-    const inventory = Object.entries(gameState.inventory);
+function generateDrop() {
+    const weapons = {
+        wooden_sword: { id: 'wooden_sword', name: 'Деревянный Меч', tier: 1, tierName: 'Common', emoji: '⚪', price: 10, chance: 0.15 },
+        rusty_knife: { id: 'rusty_knife', name: 'Ржавый Нож', tier: 1, tierName: 'Common', emoji: '⚪', price: 15, chance: 0.15 },
+        plastic_gun: { id: 'plastic_gun', name: 'Пластиковый Пистолет', tier: 1, tierName: 'Common', emoji: '⚪', price: 12, chance: 0.15 },
+        hunting_knife: { id: 'hunting_knife', name: 'Охотничий Нож', tier: 2, tierName: 'Uncommon', emoji: '🟢', price: 50, chance: 0.10 },
+        pistol: { id: 'pistol', name: 'Пистолет', tier: 2, tierName: 'Uncommon', emoji: '🟢', price: 45, chance: 0.10 },
+        baton: { id: 'baton', name: 'Дубинка', tier: 2, tierName: 'Uncommon', emoji: '🟢', price: 40, chance: 0.05 },
+        samurai_sword: { id: 'samurai_sword', name: 'Самурайский Меч', tier: 3, tierName: 'Rare', emoji: '🔵', price: 200, chance: 0.06 },
+        revolver: { id: 'revolver', name: 'Револьвер', tier: 3, tierName: 'Rare', emoji: '🔵', price: 180, chance: 0.05 },
+        combat_knife: { id: 'combat_knife', name: 'Боевой Нож', tier: 3, tierName: 'Rare', emoji: '🔵', price: 160, chance: 0.04 },
+        flame_sword: { id: 'flame_sword', name: 'Огненный Меч', tier: 4, tierName: 'Epic', emoji: '🟣', price: 800, chance: 0.03 },
+        desert_eagle: { id: 'desert_eagle', name: 'Пустынный Орёл', tier: 4, tierName: 'Epic', emoji: '🟣', price: 750, chance: 0.03 },
+        tactical_knife: { id: 'tactical_knife', name: 'Тактический Нож', tier: 4, tierName: 'Epic', emoji: '🟣', price: 700, chance: 0.02 },
+        frost_blade: { id: 'frost_blade', name: 'Ледяной Клинок', tier: 5, tierName: 'Legendary', emoji: '🟡', price: 3000, chance: 0.02 },
+        golden_gun: { id: 'golden_gun', name: 'Золотой Пистолет', tier: 5, tierName: 'Legendary', emoji: '🟡', price: 2800, chance: 0.02 },
+        shadow_dagger: { id: 'shadow_dagger', name: 'Теневой Кинжал', tier: 5, tierName: 'Legendary', emoji: '🟡', price: 2600, chance: 0.01 },
+        phoenix_blade: { id: 'phoenix_blade', name: 'Клинок Феникса', tier: 6, tierName: 'Ancient', emoji: '🔴', price: 12000, chance: 0.01 },
+        dragon_slayer: { id: 'dragon_slayer', name: 'Убийца Драконов', tier: 6, tierName: 'Ancient', emoji: '🔴', price: 15000, chance: 0.007 },
+        void_reaver: { id: 'void_reaver', name: 'Жнец Бездны', tier: 6, tierName: 'Ancient', emoji: '🔴', price: 18000, chance: 0.003 }
+    };
     
-    if (inventory.length === 0) {
-        container.innerHTML = '<p style="text-align:center; padding:40px;">🎒 Инвентарь пуст</p>';
-        return;
+    const totalChance = Object.values(weapons).reduce((sum, w) => sum + w.chance, 0);
+    let rand = Math.random() * totalChance;
+    let cumulative = 0;
+    
+    for (const weapon of Object.values(weapons)) {
+        cumulative += weapon.chance;
+        if (rand <= cumulative) return weapon;
     }
     
-    let filteredInventory = inventory;
-    if (filter !== 'all') {
-        filteredInventory = inventory.filter(([id]) => 
-            WEAPONS[id].tierName.toLowerCase() === filter
-        );
-    }
-    
-    let html = '';
-    let currentTier = 0;
-    
-    const sorted = filteredInventory.sort(([a], [b]) => WEAPONS[b].tier - WEAPONS[a].tier);
-    
-    for (const [weaponId, quantity] of sorted) {
-        const weapon = WEAPONS[weaponId];
-        
-        if (weapon.tier !== currentTier) {
-            currentTier = weapon.tier;
-            html += `<div style="margin: 12px 0 8px; font-weight: bold; color: var(--text-secondary);">
-                ${weapon.tierName}
-            </div>`;
-        }
-        
-        html += `
-            <div class="weapon-card">
-                <div class="weapon-emoji">${weapon.emoji}</div>
-                <div class="weapon-info">
-                    <div class="weapon-name">${weapon.name}</div>
-                    <span class="weapon-tier tier-${weapon.tierName.toLowerCase()}">${weapon.tierName}</span>
-                    <div class="weapon-price">💎 ${weapon.price} × ${quantity}</div>
-                </div>
-                <div class="weapon-actions">
-                    <button class="btn-small btn-sell" onclick="sellWeapon('${weaponId}')">Продать</button>
-                </div>
-            </div>
-        `;
-    }
-    
-    container.innerHTML = html;
+    return weapons.wooden_sword;
 }
 
-// Фильтр инвентаря
-function filterInventory(filter) {
-    document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
-    event.target.classList.add('active');
-    renderInventory(filter);
+// Сохранение игры
+function saveGame() {
+    localStorage.setItem('robdrop_data', JSON.stringify(gameState));
 }
 
-// Продажа оружия
-function sellWeapon(weaponId) {
-    const weapon = WEAPONS[weaponId];
-    const price = Math.floor(weapon.price / 2);
+// Toast уведомления
+function showToast(message, type = 'info') {
+    const container = document.getElementById('toast-container');
+    const toast = document.createElement('div');
+    toast.className = `toast ${type}`;
+    toast.textContent = message;
+    container.appendChild(toast);
     
-    gameState.coins += price;
-    gameState.inventory[weaponId]--;
-    
-    if (gameState.inventory[weaponId] <= 0) {
-        delete gameState.inventory[weaponId];
-    }
-    
-    saveGame();
-    updateBalance();
-    renderInventory();
-    showToast(`Продано за ${price} 💰`);
-    tg.HapticFeedback.notificationOccurred('success');
+    setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateY(-20px)';
+        setTimeout(() => toast.remove(), 300);
+    }, 2000);
 }
 
-// Рендер магазина
-function renderShop() {
-    const container = document.getElementById('shop-list');
+// Модальное окно
+function showModal(title, content, showClose = true) {
+    const modal = document.getElementById('modal');
+    document.getElementById('modal-title').textContent = title;
+    document.getElementById('modal-content').innerHTML = content;
     
-    let html = '';
-    let currentTier = 0;
-    
-    const sorted = Object.entries(WEAPONS).sort(([,a], [,b]) => a.tier - b.tier);
-    
-    for (const [id, weapon] of sorted) {
-        if (weapon.tier !== currentTier) {
-            currentTier = weapon.tier;
-            html += `<div style="margin: 12px 0 8px; font-weight: bold; color: var(--text-secondary);">
-                ${weapon.tierName}
-            </div>`;
-        }
-        
-        html += `
-            <div class="weapon-card">
-                <div class="weapon-emoji">${weapon.emoji}</div>
-                <div class="weapon-info">
-                    <div class="weapon-name">${weapon.name}</div>
-                    <span class="weapon-tier tier-${weapon.tierName.toLowerCase()}">${weapon.tierName}</span>
-                    <div class="weapon-price">💎 ${weapon.price}</div>
-                </div>
-                <div class="weapon-actions">
-                    <button class="btn-small btn-buy" onclick="buyWeapon('${id}')">Купить</button>
-                </div>
-            </div>
-        `;
+    if (showClose) {
+        document.querySelector('.modal-close').style.display = 'block';
+    } else {
+        document.querySelector('.modal-close').style.display = 'none';
     }
     
-    container.innerHTML = html;
+    modal.classList.remove('hidden');
 }
 
-// Покупка оружия
-function buyWeapon(weaponId) {
-    const weapon = WEAPONS[weaponId];
-    
-    if (gameState.coins < weapon.price) {
-        showToast('Недостаточно монет!');
-        return;
-    }
-    
-    gameState.coins -= weapon.price;
-    
-    if (!gameState.inventory[weaponId]) {
-        gameState.inventory[weaponId] = 0;
-    }
-    gameState.inventory[weaponId]++;
-    
-    saveGame();
-    updateBalance();
-    renderShop();
-    showToast(`Куплено: ${weapon.name}`);
-    tg.HapticFeedback.notificationOccurred('success');
+function closeModal() {
+    document.getElementById('modal').classList.add('hidden');
 }
 
-// Рендер апгрейда
-function renderUpgrade() {
-    const container = document.getElementById('upgrade-list');
-    
-    const upgradeable = Object.entries(gameState.inventory)
-        .filter(([id, qty]) => qty >= 3 && WEAPONS[id].tier < 6);
-    
-    if (upgradeable.length === 0) {
-        container.innerHTML = '<p style="text-align:center; padding:40px;">Нет предметов для апгрейда<br>Нужно 3 одинаковых</p>';
-        return;
-    }
-    
-    let html = '';
-    
-    for (const [weaponId, quantity] of upgradeable) {
-        const weapon = WEAPONS[weaponId];
-        const nextTierName = Object.values(WEAPONS).find(w => w.tier === weapon.tier + 1)?.tierName || '???';
-        
-        html += `
-            <div class="weapon-card">
-                <div class="weapon-emoji">${weapon.emoji}</div>
-                <div class="weapon-info">
-                    <div class="weapon-name">${weapon.name}</div>
-                    <span class="weapon-tier tier-${weapon.tierName.toLowerCase()}">${weapon.tierName}</span>
-                    <div>×${quantity} → <b>${nextTierName}</b></div>
-                </div>
-                <div class="weapon-actions">
-                    <button class="btn-small btn-upgrade" onclick="doUpgrade('${weaponId}')">Улучшить</button>
-                </div>
-            </div>
-        `;
-    }
-    
-    container.innerHTML = html;
-}
-
-// Апгрейд
-function doUpgrade(weaponId) {
-    const weapon = WEAPONS[weaponId];
-    
-    // Удаляем 3 предмета
-    gameState.inventory[weaponId] -= 3;
-    if (gameState.inventory[weaponId] <= 0) {
-        delete gameState.inventory[weaponId];
-    }
-    
-    // Находим случайное оружие следующего тира
-    const nextTier = weapon.tier + 1;
-    const possibleUpgrades = Object.entries(WEAPONS)
-        .filter(([id, w]) => w.tier === nextTier);
-    
-    const [newId, newWeapon] = possibleUpgrades[Math.floor(Math.random() * possibleUpgrades.length)];
-    
-    if (!gameState.inventory[newId]) {
-        gameState.inventory[newId] = 0;
-    }
-    gameState.inventory[newId]++;
-    
-    saveGame();
-    updateBalance();
-    renderUpgrade();
-    showToast(`Улучшено! Получено: ${newWeapon.name}`);
-    tg.HapticFeedback.notificationOccurred('success');
-}
-
-// Рендер профиля
-function renderProfile() {
-    const container = document.getElementById('profile-content');
-    const user = tg.initDataUnsafe?.user || {};
-    
-    const totalItems = Object.values(gameState.inventory).reduce((a, b) => a + b, 0);
-    const uniqueItems = Object.keys(gameState.inventory).length;
-    
-    container.innerHTML = `
-        <div class="profile-avatar">👤</div>
-        <h2>${user.first_name || 'Игрок'}</h2>
-        <p style="color: var(--text-secondary);">@${user.username || 'username'}</p>
-        
-        <div style="margin-top: 20px;">
-            <p style="font-size: 24px; color: var(--gold);">💰 ${gameState.coins}</p>
-            <p style="color: var(--text-secondary);">Баланс</p>
-        </div>
-        
-        <div class="profile-stats">
-            <div class="stat-card">
-                <div class="stat-value">${totalItems}</div>
-                <div class="stat-label">Всего предметов</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-value">${uniqueItems}</div>
-                <div class="stat-label">Уникальных</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-value">${gameState.casesOpened}</div>
-                <div class="stat-label">Кейсов открыто</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-value">18</div>
-                <div class="stat-label">Всего оружия</div>
-            </div>
-        </div>
-    `;
-}
+// Закрытие модалки по клику на фон
+document.querySelector('.modal-backdrop').addEventListener('click', closeModal);
 
 // Ежедневный бонус
-function claimDaily() {
+async function claimDaily() {
     const today = new Date().toDateString();
     
-    if (gameState.lastDaily === today) {
-        showToast('Уже получено сегодня!');
+    if (gameState.last_daily === today) {
+        showToast('Уже получено сегодня!', 'warning');
         return;
     }
     
     const bonus = Math.floor(Math.random() * 400) + 100;
     gameState.coins += bonus;
-    gameState.lastDaily = today;
+    gameState.last_daily = today;
     
     saveGame();
-    updateBalance();
-    showToast(`+${bonus} 💰 Ежедневный бонус!`);
+    updateUI();
+    await api.syncToServer(gameState);
+    
+    showToast(`+${bonus} 💰 Ежедневный бонус!`, 'success');
     tg.HapticFeedback.notificationOccurred('success');
 }
 
-// Инициализация
-function init() {
-    loadGame();
-    updateBalance();
+// Рендер инвентаря
+function renderInventory(filter = 'all') {
+    const container = document.getElementById('inventory-list');
+    let items = Object.entries(gameState.inventory);
     
-    // Устанавливаем имя пользователя
-    const user = tg.initDataUnsafe?.user;
-    if (user) {
-        document.getElementById('user-name').textContent = user.first_name || 'Игрок';
+    if (filter !== 'all') {
+        items = items.filter(([id]) => {
+            const weapon = getWeaponById(id);
+            return weapon && weapon.tierName.toLowerCase() === filter;
+        });
     }
     
-    // Обработка кнопки "Назад" в Telegram
-    tg.BackButton.onClick(() => {
-        const activeScreen = document.querySelector('.screen.active');
-        if (activeScreen && activeScreen.id !== 'main-screen') {
-            showScreen('main-screen');
-        }
-    });
+    if (items.length === 0) {
+        container.innerHTML = `
+            <div style="text-align:center; padding:40px; color: var(--text-secondary);">
+                <div style="font-size: 48px; margin-bottom: 16px;">🎒</div>
+                <p>Инвентарь пуст</p>
+                <p style="font-size: 12px; margin-top: 8px;">Откройте кейсы чтобы получить оружие!</p>
+            </div>
+        `;
+        return;
+    }
+    
+    container.innerHTML = items.map(([weaponId, quantity]) => {
+        const weapon = getWeaponById(weaponId);
+        if (!weapon) return '';
+        
+        return `
+            <div class="weapon-card ${weapon.tierName.toLowerCase()}">
+                <div class="weapon-icon">${weapon.emoji}</div>
+                <div class="weapon-details">
+                    <div class="weapon-name">${weapon.name}</div>
+                    <span class="weapon-tier-badge tier-${weapon.tierName.toLowerCase()}">${weapon.tierName}</span>
+                    <div class="weapon-price">💎 ${weapon.price}</div>
+                </div>
+                <div class="weapon-quantity">${quantity}</div>
+                <div class="weapon-actions">
+                    <button class="btn-action btn-sell" onclick="sellWeapon('${weaponId}')">Продать</button>
+                    ${quantity >= 3 && weapon.tier < 6 ? 
+                        `<button class="btn-action btn-upgrade" onclick="upgradeWeapon('${weaponId}')">Апгрейд</button>` 
+                        : ''}
+                </div>
+            </div>
+        `;
+    }).join('');
 }
 
-// Запуск
-init();
+function getWeaponById(id) {
+    const weapon = generateDrop();
+    // В реальном приложении здесь должен быть поиск по ID
+    return weapon;
+}
+
+// Запуск приложения
+document.addEventListener('DOMContentLoaded', initApp);
