@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MM2 Casino</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+</head>
+<body>
+    <div class="app">
+        <div class="header">
+            <h1>🎮 MM2 Casino</h1>
+            <div class="balance">
+                💰 <span id="coins">500</span> монет
+            </div>
+        </div>
+        
+        <div class="main-menu">
+            <button class="btn btn-primary" onclick="openCase()">
+                🎁 Открыть кейс (100 монет)
+            </button>
+            <button class="btn btn-secondary" onclick="showInventory()">
+                🎒 Инвентарь
+            </button>
+            <button class="btn btn-secondary" onclick="showShop()">
+                🏪 Магазин
+            </button>
+            <button class="btn btn-secondary" onclick="upgradeWeapon()">
+                ⬆️ Апгрейд
+            </button>
+        </div>
+        
+        <div id="content" class="content">
+            <!-- Динамический контент -->
+        </div>
+    </div>
+    
+    <script src="app.js"></script>
+</body>
+</html>
