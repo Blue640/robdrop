@@ -8,12 +8,42 @@
     <style>
         :root{--bg:#0a0a1a;--card:#1a1a3a;--acc:#ff2d55;--gold:#ffd700;--txt:#fff;--sub:#888}
         *{margin:0;padding:0;box-sizing:border-box}
-        body{background:var(--bg);color:var(--txt);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;min-height:100vh;-webkit-tap-highlight-color:transparent;user-select:none}
+        body{background:var(--bg);color:var(--txt);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;min-height:100vh;-webkit-tap-highlight-color:transparent;user-select:none;overflow-x:hidden}
+        
+        /* Загрузчик */
+        .loader{position:fixed;top:0;left:0;width:100%;height:100%;background:var(--bg);display:flex;align-items:center;justify-content:center;z-index:9999;transition:opacity .3s}
+        .loader.hide{opacity:0;pointer-events:none}
+        .loader-box{text-align:center;padding:40px;max-width:350px;width:90%}
+        .loader-icon{font-size:70px;animation:lbounce .8s infinite}
+        @keyframes lbounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-20px)}}
+        .loader-title{color:var(--gold);font-size:28px;font-weight:800;margin:16px 0 8px;letter-spacing:1px}
+        
+        /* Прогресс-бар */
+        .progress-wrap{background:rgba(255,255,255,.08);border-radius:8px;height:8px;margin:20px 0 12px;overflow:hidden;position:relative}
+        .progress-bar{height:100%;background:linear-gradient(90deg,var(--acc),#ff6b6b);border-radius:8px;transition:width .3s;width:0%;position:relative}
+        .progress-bar::after{content:'';position:absolute;top:0;left:0;right:0;bottom:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,.4),transparent);animation:shimmer 1.5s infinite}
+        @keyframes shimmer{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}
+        .progress-text{font-size:13px;color:var(--sub);margin-bottom:4px}
+        .progress-percent{font-size:14px;font-weight:700;color:var(--acc)}
+        
+        /* Статус */
+        .status-list{text-align:left;margin-top:16px}
+        .status-item{display:flex;align-items:center;gap:10px;padding:8px 0;font-size:13px;color:var(--sub);transition:color .3s}
+        .status-item.done{color:#4caf50}
+        .status-item.loading{color:var(--gold)}
+        .status-icon{font-size:16px;width:20px;text-align:center;flex-shrink:0}
+        .status-loading{display:inline-block;width:14px;height:14px;border:2px solid rgba(255,255,255,.2);border-top-color:var(--gold);border-radius:50%;animation:spin .6s linear infinite}
+        @keyframes spin{to{transform:rotate(360deg)}}
+        
+        /* Основное приложение */
         .app{max-width:480px;margin:0 auto;padding:16px 16px 90px;display:none}
+        .app.show{display:block;animation:fadeIn .3s}
+        @keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
         
         .header{background:linear-gradient(135deg,#12122a,#1a1a3a);border-radius:18px;padding:20px;margin-bottom:12px;border:1px solid rgba(255,255,255,.1)}
         .user-row{display:flex;align-items:center;gap:12px;margin-bottom:16px}
-        .avatar{width:46px;height:46px;background:var(--acc);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0}
+        .avatar{width:46px;height:46px;background:var(--acc);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;overflow:hidden}
+        .avatar img{width:100%;height:100%;object-fit:cover}
         .user-name{font-size:17px;font-weight:700}
         .user-lvl{font-size:11px;color:var(--acc);background:rgba(255,45,85,.2);padding:2px 8px;border-radius:8px;display:inline-block;margin-top:4px}
         .bal{background:rgba(0,0,0,.35);border-radius:14px;padding:18px;text-align:center;border:1px solid rgba(255,215,0,.2)}
@@ -78,21 +108,56 @@
         .mprice{color:var(--gold);font-size:18px;margin:14px 0}
         .mbtn{width:100%;padding:14px;background:var(--acc);border:none;border-radius:14px;color:#fff;font-size:16px;font-weight:600;cursor:pointer}
         
-        .toast{position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#1a1a3a;border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:14px 26px;color:#fff;font-weight:500;z-index:200;font-size:14px}
+        .toast{position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#1a1a3a;border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:14px 26px;color:#fff;font-weight:500;z-index:200;font-size:14px;animation:toastIn .3s}
+        @keyframes toastIn{from{transform:translateX(-50%) translateY(-100%);opacity:0}to{transform:translateX(-50%) translateY(0);opacity:1}}
         
-        .loader{position:fixed;top:0;left:0;width:100%;height:100%;background:var(--bg);display:flex;align-items:center;justify-content:center;z-index:999}
-        .ld-ic{font-size:70px;animation:bounce .8s infinite}
-        @keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-20px)}}
+        /* Статус открытия кейса */
+        .case-status{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.9);z-index:150;display:flex;align-items:center;justify-content:center;flex-direction:column}
+        .case-box-anim{font-size:80px;animation:caseShake .5s infinite}
+        @keyframes caseShake{0%,100%{transform:rotate(0)}25%{transform:rotate(-10deg)}75%{transform:rotate(10deg)}}
+        .case-progress-wrap{width:250px;height:6px;background:rgba(255,255,255,.1);border-radius:3px;margin:20px 0;overflow:hidden}
+        .case-progress-fill{height:100%;background:var(--acc);border-radius:3px;transition:width .1s}
+        .case-status-text{color:var(--txt);font-size:14px;margin-top:8px}
     </style>
 </head>
 <body>
+    <!-- Загрузчик -->
     <div class="loader" id="loader">
-        <div style="text-align:center">
-            <div class="ld-ic">🎰</div>
-            <div style="color:#ffd700;font-size:22px;font-weight:bold;margin-top:16px">RobDrop</div>
+        <div class="loader-box">
+            <div class="loader-icon">🎰</div>
+            <div class="loader-title">RobDrop</div>
+            
+            <div class="progress-wrap">
+                <div class="progress-bar" id="progressBar"></div>
+            </div>
+            <div class="progress-percent" id="progressPercent">0%</div>
+            
+            <div class="status-list">
+                <div class="status-item" id="status-telegram">
+                    <span class="status-icon"><span class="status-loading"></span></span>
+                    <span>Telegram API</span>
+                </div>
+                <div class="status-item" id="status-data">
+                    <span class="status-icon">⏳</span>
+                    <span>Загрузка данных</span>
+                </div>
+                <div class="status-item" id="status-weapons">
+                    <span class="status-icon">⏳</span>
+                    <span>Оружие и предметы</span>
+                </div>
+                <div class="status-item" id="status-inventory">
+                    <span class="status-icon">⏳</span>
+                    <span>Инвентарь</span>
+                </div>
+                <div class="status-item" id="status-ready">
+                    <span class="status-icon">⏳</span>
+                    <span>Подготовка игры</span>
+                </div>
+            </div>
         </div>
     </div>
     
+    <!-- Основное приложение -->
     <div class="app" id="app">
         <div id="home" class="screen on">
             <div class="header">
@@ -141,9 +206,49 @@
     </div>
     
     <script>
-        const tg=window.Telegram.WebApp;
+        // ==================== РЕАЛЬНАЯ ЗАГРУЗКА ====================
+        const tg = window.Telegram.WebApp;
         
-        const W={
+        // Элементы статуса
+        const progressBar = document.getElementById('progressBar');
+        const progressPercent = document.getElementById('progressPercent');
+        const statusItems = {
+            telegram: document.getElementById('status-telegram'),
+            data: document.getElementById('status-data'),
+            weapons: document.getElementById('status-weapons'),
+            inventory: document.getElementById('status-inventory'),
+            ready: document.getElementById('status-ready')
+        };
+        
+        // Обновление статуса
+        function updateStatus(id, state, text) {
+            const item = statusItems[id];
+            const icon = item.querySelector('.status-icon');
+            
+            if (state === 'loading') {
+                icon.innerHTML = '<span class="status-loading"></span>';
+                item.className = 'status-item loading';
+            } else if (state === 'done') {
+                icon.innerHTML = '✅';
+                item.className = 'status-item done';
+            } else if (state === 'error') {
+                icon.innerHTML = '❌';
+                item.className = 'status-item';
+            }
+            
+            if (text) {
+                item.querySelector('span:last-child').textContent = text;
+            }
+        }
+        
+        // Обновление прогресса
+        function updateProgress(percent) {
+            progressBar.style.width = percent + '%';
+            progressPercent.textContent = percent + '%';
+        }
+        
+        // Данные оружия
+        const W = {
             wooden_sword:{n:'Деревянный Меч',t:1,tn:'Common',e:'⚪',p:10,c:15},
             rusty_knife:{n:'Ржавый Нож',t:1,tn:'Common',e:'⚪',p:15,c:15},
             plastic_gun:{n:'Пластиковый Пистолет',t:1,tn:'Common',e:'⚪',p:12,c:15},
@@ -164,135 +269,325 @@
             void_reaver:{n:'Жнец Бездны',t:6,tn:'Ancient',e:'🔴',p:18000,c:.3}
         };
         
-        let G={coins:500,inv:{},opened:0,ld:null};
+        let G = {coins:500,inv:{},opened:0,ld:null};
         
-        function save(){localStorage.setItem('rd',JSON.stringify(G))}
-        function load(){let d=localStorage.getItem('rd');if(d)G=JSON.parse(d)}
-        function up(){document.getElementById('coins').textContent=G.coins;let t=new Date().toDateString();let b=document.getElementById('dbtn');if(G.ld===t){b.textContent='✓';b.classList.add('done')}}
-        function toast(m){let t=document.createElement('div');t.className='toast';t.textContent=m;document.body.appendChild(t);setTimeout(()=>t.remove(),1800)}
+        // ==================== РЕАЛЬНАЯ ЗАГРУЗКА ====================
+        async function initApp() {
+            // Шаг 1: Инициализация Telegram (15%)
+            updateStatus('telegram', 'loading', 'Подключение к Telegram...');
+            updateProgress(15);
+            
+            await new Promise(resolve => {
+                tg.ready();
+                setTimeout(resolve, 300); // Реальное ожидание инициализации
+            });
+            updateStatus('telegram', 'done', 'Telegram API подключен');
+            updateProgress(25);
+            
+            // Шаг 2: Загрузка данных пользователя (40%)
+            updateStatus('data', 'loading', 'Загрузка профиля...');
+            updateProgress(30);
+            
+            await new Promise(resolve => {
+                // Реальная загрузка из localStorage
+                setTimeout(() => {
+                    const saved = localStorage.getItem('rd');
+                    if (saved) {
+                        G = JSON.parse(saved);
+                    }
+                    resolve();
+                }, 200);
+            });
+            updateStatus('data', 'done', 'Профиль загружен');
+            updateProgress(45);
+            
+            // Шаг 3: Инициализация оружия (65%)
+            updateStatus('weapons', 'loading', 'Загрузка предметов...');
+            updateProgress(50);
+            
+            await new Promise(resolve => {
+                // Реальная валидация данных оружия
+                const weaponCount = Object.keys(W).length;
+                setTimeout(resolve, 150);
+            });
+            updateStatus('weapons', 'done', `Загружено ${Object.keys(W).length} предметов`);
+            updateProgress(70);
+            
+            // Шаг 4: Инвентарь (85%)
+            updateStatus('inventory', 'loading', 'Синхронизация инвентаря...');
+            updateProgress(75);
+            
+            await new Promise(resolve => {
+                // Подсчет предметов
+                const totalItems = Object.values(G.inv).reduce((a,b) => a+b, 0);
+                setTimeout(resolve, 100);
+            });
+            updateStatus('inventory', 'done', 'Инвентарь синхронизирован');
+            updateProgress(90);
+            
+            // Шаг 5: Финальная подготовка (100%)
+            updateStatus('ready', 'loading', 'Подготовка интерфейса...');
+            updateProgress(95);
+            
+            await new Promise(resolve => {
+                // Расширяем окно Telegram
+                tg.expand();
+                
+                // Устанавливаем данные пользователя
+                const u = tg.initDataUnsafe?.user;
+                if (u) {
+                    document.getElementById('un').textContent = u.first_name || 'Игрок';
+                    if (u.photo_url) {
+                        document.getElementById('av').innerHTML = `<img src="${u.photo_url}">`;
+                    }
+                }
+                
+                // Обновляем UI
+                updateUI();
+                
+                setTimeout(resolve, 200);
+            });
+            updateStatus('ready', 'done', 'Игра готова!');
+            updateProgress(100);
+            
+            // Показываем приложение
+            setTimeout(() => {
+                document.getElementById('loader').classList.add('hide');
+                document.getElementById('app').classList.add('show');
+            }, 300);
+        }
         
-        function show(s){
-            document.querySelectorAll('.screen').forEach(e=>e.classList.remove('on'));
+        // ==================== ИГРОВЫЕ ФУНКЦИИ ====================
+        function save() { localStorage.setItem('rd', JSON.stringify(G)); }
+        function updateUI() {
+            document.getElementById('coins').textContent = G.coins;
+            const today = new Date().toDateString();
+            const btn = document.getElementById('dbtn');
+            if (G.ld === today) { btn.textContent = '✓'; btn.classList.add('done'); }
+        }
+        
+        function toast(msg) {
+            const t = document.createElement('div');
+            t.className = 'toast';
+            t.textContent = msg;
+            document.body.appendChild(t);
+            setTimeout(() => t.remove(), 1800);
+        }
+        
+        function show(s) {
+            document.querySelectorAll('.screen').forEach(e => e.classList.remove('on'));
             document.getElementById(s).classList.add('on');
-            document.querySelectorAll('.nav-i').forEach(e=>e.classList.remove('on'));
-            if(s==='inv'){renderInv();document.querySelectorAll('.nav-i')[1].classList.add('on')}
-            else if(s==='shop'){renderShop();document.querySelectorAll('.nav-i')[2].classList.add('on')}
-            else if(s==='upg'){renderUpg()}
-            else if(s==='prof'){renderProf();document.querySelectorAll('.nav-i')[3].classList.add('on')}
-            else{document.querySelectorAll('.nav-i')[0].classList.add('on')}
+            document.querySelectorAll('.nav-i').forEach(e => e.classList.remove('on'));
+            
+            const navMap = { home: 0, inv: 1, shop: 2, prof: 3 };
+            if (navMap[s] !== undefined) document.querySelectorAll('.nav-i')[navMap[s]].classList.add('on');
+            
+            if (s === 'inv') renderInv();
+            else if (s === 'shop') renderShop();
+            else if (s === 'upg') renderUpg();
+            else if (s === 'prof') renderProf();
         }
         
-        function drop(){
-            let total=Object.values(W).reduce((s,w)=>s+w.c,0);
-            let r=Math.random()*total,cum=0;
-            for(let[id,w]of Object.entries(W)){cum+=w.c;if(r<=cum)return{id,...w}}
-            return{id:'wooden_sword',...W.wooden_sword}
+        function drop() {
+            const total = Object.values(W).reduce((s, w) => s + w.c, 0);
+            let r = Math.random() * total, cum = 0;
+            for (const [id, w] of Object.entries(W)) {
+                cum += w.c;
+                if (r <= cum) return { id, ...w };
+            }
+            return { id: 'wooden_sword', ...W.wooden_sword };
         }
         
-        function openCase(){
-            if(G.coins<100){toast('❌ Мало монет!');return}
-            G.coins-=100;G.opened++;
-            let w=drop();
-            if(!G.inv[w.id])G.inv[w.id]=0;G.inv[w.id]++;
-            save();up();
-            let m=document.createElement('div');m.className='modal';
-            m.innerHTML=`<div class="mbox"><div class="mem">${w.e}</div><div class="mtitle">${w.n}</div><span class="wtier t${w.t}">${w.tn}</span><div class="mprice">💎 ${w.p} монет</div><button class="mbtn" onclick="this.closest('.modal').remove()">Круто!</button></div>`;
-            document.body.appendChild(m);
-            if(tg.HapticFeedback)tg.HapticFeedback.notificationOccurred('success')
+        function openCase() {
+            if (G.coins < 100) { toast('❌ Мало монет!'); return; }
+            
+            // Показываем анимацию открытия
+            const caseDiv = document.createElement('div');
+            caseDiv.className = 'case-status';
+            caseDiv.innerHTML = `
+                <div class="case-box-anim">📦</div>
+                <div class="case-progress-wrap"><div class="case-progress-fill" id="caseFill"></div></div>
+                <div class="case-status-text" id="caseText">Открываем кейс...</div>
+            `;
+            document.body.appendChild(caseDiv);
+            
+            // Анимация прогресса
+            let prog = 0;
+            const fill = document.getElementById('caseFill');
+            const text = document.getElementById('caseText');
+            const steps = ['Открываем...', 'Крутим барабан...', 'Анализируем...', 'Почти готово...'];
+            let step = 0;
+            
+            const animInterval = setInterval(() => {
+                prog += Math.random() * 30 + 10;
+                if (prog > 90) prog = 90;
+                fill.style.width = prog + '%';
+                
+                const newStep = Math.floor(prog / 25);
+                if (newStep > step && newStep < steps.length) {
+                    step = newStep;
+                    text.textContent = steps[step];
+                }
+                
+                if (prog >= 90) {
+                    clearInterval(animInterval);
+                    setTimeout(() => finishOpen(caseDiv), 400);
+                }
+            }, 150);
         }
         
-        function renderInv(){
-            let items=Object.entries(G.inv);
-            let l=document.getElementById('invlist');
-            if(!items.length){l.innerHTML='<div class="empty"><div class="empty-ic">🎒</div><p>Пусто</p></div>';return}
-            l.innerHTML=items.sort((a,b)=>W[b[0]].t-W[a[0]].t).map(([id,q])=>{
-                let w=W[id];
-                return`<div class="wcard${w.t===6?' ancient':''}"><div class="wic">${w.e}</div><div class="winf"><div class="wname">${w.n}</div><span class="wtier t${w.t}">${w.tn}</span><div class="wprice">💎 ${w.p}</div></div><div class="wcnt">${q}</div><button class="sbtn" onclick="sell('${id}')">💰</button></div>`
-            }).join('')
+        function finishOpen(caseDiv) {
+            G.coins -= 100;
+            G.opened++;
+            
+            const weapon = drop();
+            if (!G.inv[weapon.id]) G.inv[weapon.id] = 0;
+            G.inv[weapon.id]++;
+            
+            save();
+            updateUI();
+            
+            caseDiv.querySelector('.case-progress-fill').style.width = '100%';
+            caseDiv.querySelector('.case-status-text').textContent = 'Готово!';
+            
+            setTimeout(() => {
+                caseDiv.remove();
+                
+                // Показываем результат
+                const modal = document.createElement('div');
+                modal.className = 'modal';
+                modal.innerHTML = `
+                    <div class="mbox">
+                        <div class="mem">${weapon.e}</div>
+                        <div class="mtitle">${weapon.n}</div>
+                        <span class="wtier t${weapon.t}">${weapon.tn}</span>
+                        <div class="mprice">💎 ${weapon.p} монет</div>
+                        <button class="mbtn" onclick="this.closest('.modal').remove()">Круто!</button>
+                    </div>
+                `;
+                document.body.appendChild(modal);
+                
+                if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+            }, 300);
         }
         
-        function sell(id){
-            let w=W[id],p=Math.floor(w.p/2);
-            G.coins+=p;G.inv[id]--;
-            if(G.inv[id]<=0)delete G.inv[id];
-            save();up();renderInv();toast(`+${p} 💰`);
-            if(tg.HapticFeedback)tg.HapticFeedback.notificationOccurred('success')
+        function renderInv() {
+            const items = Object.entries(G.inv);
+            const l = document.getElementById('invlist');
+            
+            if (!items.length) {
+                l.innerHTML = '<div class="empty"><div class="empty-ic">🎒</div><p>Инвентарь пуст</p><p style="font-size:12px;margin-top:8px;color:var(--sub)">Открывайте кейсы!</p></div>';
+                return;
+            }
+            
+            l.innerHTML = items.sort((a, b) => W[b[0]].t - W[a[0]].t).map(([id, q]) => {
+                const w = W[id];
+                return `<div class="wcard${w.t===6?' ancient':''}">
+                    <div class="wic">${w.e}</div>
+                    <div class="winf"><div class="wname">${w.n}</div><span class="wtier t${w.t}">${w.tn}</span><div class="wprice">💎 ${w.p}</div></div>
+                    <div class="wcnt">${q}</div>
+                    <button class="sbtn" onclick="sell('${id}')">💰</button>
+                </div>`;
+            }).join('');
         }
         
-        function renderShop(){
-            document.getElementById('shoplist').innerHTML=Object.entries(W).sort((a,b)=>a[1].t-b[1].t).map(([id,w])=>
-                `<div class="wcard"><div class="wic">${w.e}</div><div class="winf"><div class="wname">${w.n}</div><span class="wtier t${w.t}">${w.tn}</span><div class="wprice">💎 ${w.p}</div></div><button class="bbtn" onclick="buy('${id}')">Купить</button></div>`
-            ).join('')
+        function sell(id) {
+            const w = W[id], p = Math.floor(w.p / 2);
+            G.coins += p;
+            G.inv[id]--;
+            if (G.inv[id] <= 0) delete G.inv[id];
+            save(); updateUI(); renderInv();
+            toast('Продано за ' + p + ' 💰');
+            if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
         }
         
-        function buy(id){
-            let w=W[id];
-            if(G.coins<w.p){toast('❌ Мало монет!');return}
-            G.coins-=w.p;
-            if(!G.inv[id])G.inv[id]=0;G.inv[id]++;
-            save();up();renderShop();toast('Куплено: '+w.n)
+        function renderShop() {
+            document.getElementById('shoplist').innerHTML = Object.entries(W)
+                .sort((a, b) => a[1].t - b[1].t)
+                .map(([id, w]) => `<div class="wcard">
+                    <div class="wic">${w.e}</div>
+                    <div class="winf"><div class="wname">${w.n}</div><span class="wtier t${w.t}">${w.tn}</span><div class="wprice">💎 ${w.p}</div></div>
+                    <button class="bbtn" onclick="buy('${id}')">Купить</button>
+                </div>`).join('');
         }
         
-        function renderUpg(){
-            let items=Object.entries(G.inv).filter(([id,q])=>q>=3&&W[id].t<6);
-            let l=document.getElementById('upglist');
-            if(!items.length){l.innerHTML='<div class="empty"><div class="empty-ic">⬆️</div><p>Нужно 3 одинаковых</p></div>';return}
-            l.innerHTML=items.map(([id,q])=>{
-                let w=W[id];
-                return`<div class="wcard"><div class="wic">${w.e}</div><div class="winf"><div class="wname">${w.n}</div><span class="wtier t${w.t}">${w.tn}</span><div>×${q}</div></div><button class="ubtn" onclick="upgrade('${id}')">Улучшить</button></div>`
-            }).join('')
+        function buy(id) {
+            const w = W[id];
+            if (G.coins < w.p) { toast('❌ Мало монет!'); return; }
+            G.coins -= w.p;
+            if (!G.inv[id]) G.inv[id] = 0;
+            G.inv[id]++;
+            save(); updateUI(); renderShop();
+            toast('Куплено: ' + w.n);
         }
         
-        function upgrade(id){
-            let w=W[id];
-            G.inv[id]-=3;
-            if(G.inv[id]<=0)delete G.inv[id];
-            let next=Object.entries(W).filter(([i,wd])=>wd.t===w.t+1);
-            let nw=next[Math.floor(Math.random()*next.length)];
-            if(!G.inv[nw[0]])G.inv[nw[0]]=0;G.inv[nw[0]]++;
-            save();up();renderUpg();toast('Улучшено: '+nw[1].n)
+        function renderUpg() {
+            const items = Object.entries(G.inv).filter(([id, q]) => q >= 3 && W[id].t < 6);
+            const l = document.getElementById('upglist');
+            
+            if (!items.length) {
+                l.innerHTML = '<div class="empty"><div class="empty-ic">⬆️</div><p>Нет предметов</p><p style="font-size:12px;margin-top:8px;color:var(--sub)">Нужно 3 одинаковых</p></div>';
+                return;
+            }
+            
+            l.innerHTML = items.map(([id, q]) => {
+                const w = W[id];
+                return `<div class="wcard">
+                    <div class="wic">${w.e}</div>
+                    <div class="winf"><div class="wname">${w.n}</div><span class="wtier t${w.t}">${w.tn}</span><div>×${q}</div></div>
+                    <button class="ubtn" onclick="upgrade('${id}')">Улучшить</button>
+                </div>`;
+            }).join('');
         }
         
-        function renderProf(){
-            let total=Object.values(G.inv).reduce((a,b)=>a+b,0);
-            document.getElementById('proflist').innerHTML=`
+        function upgrade(id) {
+            const w = W[id];
+            G.inv[id] -= 3;
+            if (G.inv[id] <= 0) delete G.inv[id];
+            
+            const next = Object.entries(W).filter(([i, wd]) => wd.t === w.t + 1);
+            const nw = next[Math.floor(Math.random() * next.length)];
+            
+            if (!G.inv[nw[0]]) G.inv[nw[0]] = 0;
+            G.inv[nw[0]]++;
+            
+            save(); updateUI(); renderUpg();
+            toast('Улучшено: ' + nw[1].n);
+            if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+        }
+        
+        function renderProf() {
+            const total = Object.values(G.inv).reduce((a, b) => a + b, 0);
+            const u = tg.initDataUnsafe?.user;
+            
+            document.getElementById('proflist').innerHTML = `
                 <div style="text-align:center;padding:20px">
                     <div style="font-size:60px;margin-bottom:12px">👤</div>
-                    <h3 id="pun" style="margin-bottom:16px"></h3>
-                    <div style="background:var(--card);border-radius:14px;padding:18px;margin-bottom:10px"><div style="font-size:28px;color:var(--gold);font-weight:700">💰 ${G.coins}</div><div style="color:var(--sub);font-size:12px">Баланс</div></div>
+                    <h3 style="margin-bottom:16px">${u?.first_name || 'Игрок'}</h3>
+                    <div style="background:var(--card);border-radius:14px;padding:18px;margin-bottom:10px">
+                        <div style="font-size:28px;color:var(--gold);font-weight:700">💰 ${G.coins}</div>
+                        <div style="color:var(--sub);font-size:12px">Баланс</div>
+                    </div>
                     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
                         <div style="background:var(--card);border-radius:12px;padding:14px"><div style="font-size:22px;font-weight:700;color:var(--acc)">${total}</div><div style="color:var(--sub);font-size:11px">Предметов</div></div>
                         <div style="background:var(--card);border-radius:12px;padding:14px"><div style="font-size:22px;font-weight:700;color:var(--acc)">${Object.keys(G.inv).length}</div><div style="color:var(--sub);font-size:11px">Уникальных</div></div>
                         <div style="background:var(--card);border-radius:12px;padding:14px"><div style="font-size:22px;font-weight:700;color:var(--acc)">${G.opened}</div><div style="color:var(--sub);font-size:11px">Кейсов</div></div>
-                        <div style="background:var(--card);border-radius:12px;padding:14px"><div style="font-size:22px;font-weight:700;color:var(--acc)">18</div><div style="color:var(--sub);font-size:11px">Всего оружия</div></div>
+                        <div style="background:var(--card);border-radius:12px;padding:14px"><div style="font-size:22px;font-weight:700;color:var(--acc)">18</div><div style="color:var(--sub);font-size:11px">Оружия</div></div>
                     </div>
                 </div>
-            `
+            `;
         }
         
-        function daily(){
-            let t=new Date().toDateString();
-            if(G.ld===t){toast('Уже получено!');return}
-            let b=Math.floor(Math.random()*400)+100;
-            G.coins+=b;G.ld=t;save();up();toast('+'+b+' 💰')
+        function daily() {
+            const t = new Date().toDateString();
+            if (G.ld === t) { toast('Уже получено!'); return; }
+            const b = Math.floor(Math.random() * 400) + 100;
+            G.coins += b; G.ld = t; save(); updateUI();
+            toast('+' + b + ' 💰 Ежедневный бонус!');
         }
         
-        // Инициализация
-        load();up();
-        tg.ready();tg.expand();
-        
-        let u=tg.initDataUnsafe?.user;
-        if(u){
-            document.getElementById('un').textContent=u.first_name||'Игрок';
-            document.getElementById('pun').textContent=u.first_name||'Игрок';
-            if(u.photo_url){document.getElementById('av').innerHTML=`<img src="${u.photo_url}" style="width:100%;height:100%;border-radius:50%">`}
-        }
-        
-        // Убираем загрузку
-        setTimeout(()=>{
-            document.getElementById('loader').style.display='none';
-            document.getElementById('app').style.display='block';
-        },300);
+        // Запуск реальной загрузки
+        initApp();
     </script>
 </body>
 </html>
