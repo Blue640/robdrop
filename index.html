@@ -3,139 +3,157 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <meta name="theme-color" content="#1a1a2e">
+    <meta name="theme-color" content="#0a0a1a">
     <title>RobDrop - MM2 Casino</title>
     <link rel="stylesheet" href="style.css">
+    <link rel="manifest" href="manifest.json">
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
 </head>
 <body>
-    <!-- Экраны приложения -->
-    <div id="app">
-        <!-- Главный экран -->
-        <div id="main-screen" class="screen active">
-            <div class="header">
-                <div class="logo">🎰 RobDrop</div>
-                <div class="balance-container">
-                    <div class="balance">
-                        <span class="coin-icon">💰</span>
-                        <span id="coins-display">500</span>
+    <!-- Splash Screen -->
+    <div id="splash" class="splash-screen">
+        <div class="splash-content">
+            <div class="splash-logo">🎰</div>
+            <div class="splash-title">RobDrop</div>
+            <div class="loading-bar">
+                <div class="loading-fill"></div>
+            </div>
+            <div class="splash-subtitle">Загрузка...</div>
+        </div>
+    </div>
+
+    <!-- Основное приложение -->
+    <div id="app" class="app-container hidden">
+        <!-- Навигация -->
+        <nav class="bottom-nav">
+            <button class="nav-btn active" data-screen="home">
+                <span class="nav-icon">🏠</span>
+                <span class="nav-label">Главная</span>
+            </button>
+            <button class="nav-btn" data-screen="inventory">
+                <span class="nav-icon">🎒</span>
+                <span class="nav-label">Инвентарь</span>
+            </button>
+            <button class="nav-btn" data-screen="case">
+                <span class="nav-icon">🎁</span>
+                <span class="nav-label">Кейсы</span>
+            </button>
+            <button class="nav-btn" data-screen="shop">
+                <span class="nav-icon">🏪</span>
+                <span class="nav-label">Магазин</span>
+            </button>
+            <button class="nav-btn" data-screen="profile">
+                <span class="nav-icon">👤</span>
+                <span class="nav-label">Профиль</span>
+            </button>
+        </nav>
+
+        <!-- Экраны -->
+        <div class="screens-container">
+            <!-- Главный экран -->
+            <div id="home-screen" class="screen active">
+                <div class="header-section">
+                    <div class="user-welcome">
+                        <div class="user-avatar" id="user-avatar">👤</div>
+                        <div>
+                            <div class="user-name" id="user-name">Игрок</div>
+                            <div class="user-level">Уровень 1</div>
+                        </div>
+                    </div>
+                    <div class="balance-card">
+                        <div class="balance-label">Баланс</div>
+                        <div class="balance-amount">
+                            <span class="coin-icon">💰</span>
+                            <span id="coins-display">500</span>
+                        </div>
                     </div>
                 </div>
+
+                <div class="daily-reward" id="daily-reward">
+                    <div class="daily-info">
+                        <span class="daily-icon">🎁</span>
+                        <span class="daily-text">Ежедневная награда</span>
+                    </div>
+                    <button class="daily-btn" id="daily-btn" onclick="claimDaily()">
+                        Забрать
+                    </button>
+                </div>
+
+                <div class="quick-actions">
+                    <button class="quick-btn case-btn" onclick="openCaseAnimation()">
+                        <span class="quick-icon">🎁</span>
+                        <span>Открыть кейс</span>
+                        <span class="quick-price">100 💰</span>
+                    </button>
+                    
+                    <div class="quick-grid">
+                        <button class="quick-btn" onclick="switchScreen('upgrade')">
+                            <span class="quick-icon">⬆️</span>
+                            <span>Апгрейд</span>
+                        </button>
+                        <button class="quick-btn" onclick="switchScreen('trade')">
+                            <span class="quick-icon">🔄</span>
+                            <span>Обмен</span>
+                        </button>
+                        <button class="quick-btn" onclick="switchScreen('top')">
+                            <span class="quick-icon">🏆</span>
+                            <span>Топ</span>
+                        </button>
+                        <button class="quick-btn" onclick="switchScreen('friends')">
+                            <span class="quick-icon">👥</span>
+                            <span>Друзья</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="recent-section">
+                    <h3>🎯 Последние дропы</h3>
+                    <div id="recent-drops" class="recent-list"></div>
+                </div>
             </div>
-            
-            <div class="user-greeting">
-                Привет, <span id="user-name">Игрок</span>!
-            </div>
-            
-            <div class="main-actions">
-                <button class="action-btn case-btn" onclick="openCase()">
-                    <span class="btn-icon">🎁</span>
-                    <span class="btn-text">Открыть кейс</span>
-                    <span class="btn-price">100 💰</span>
-                </button>
+
+            <!-- Экран инвентаря -->
+            <div id="inventory-screen" class="screen">
+                <div class="screen-header">
+                    <h2>🎒 Инвентарь</h2>
+                    <div class="inventory-stats">
+                        <span id="total-items">0 предметов</span>
+                    </div>
+                </div>
                 
-                <div class="actions-grid">
-                    <button class="action-btn" onclick="showScreen('inventory-screen')">
-                        <span class="btn-icon">🎒</span>
-                        <span class="btn-text">Инвентарь</span>
-                    </button>
-                    <button class="action-btn" onclick="showScreen('shop-screen')">
-                        <span class="btn-icon">🏪</span>
-                        <span class="btn-text">Магазин</span>
-                    </button>
-                    <button class="action-btn" onclick="showScreen('upgrade-screen')">
-                        <span class="btn-icon">⬆️</span>
-                        <span class="btn-text">Апгрейд</span>
-                    </button>
-                    <button class="action-btn" onclick="showScreen('profile-screen')">
-                        <span class="btn-icon">👤</span>
-                        <span class="btn-text">Профиль</span>
-                    </button>
+                <div class="tier-filters">
+                    <button class="tier-btn active" onclick="filterInventory('all')">Все</button>
+                    <button class="tier-btn common" onclick="filterInventory('common')">⚪</button>
+                    <button class="tier-btn uncommon" onclick="filterInventory('uncommon')">🟢</button>
+                    <button class="tier-btn rare" onclick="filterInventory('rare')">🔵</button>
+                    <button class="tier-btn epic" onclick="filterInventory('epic')">🟣</button>
+                    <button class="tier-btn legendary" onclick="filterInventory('legendary')">🟡</button>
+                    <button class="tier-btn ancient" onclick="filterInventory('ancient')">🔴</button>
                 </div>
+                
+                <div id="inventory-list" class="inventory-grid"></div>
             </div>
-            
-            <div class="daily-bonus" id="daily-bonus">
-                <button class="bonus-btn" onclick="claimDaily()">
-                    🎁 Ежедневный бонус
-                </button>
-            </div>
-        </div>
-        
-        <!-- Экран открытия кейса -->
-        <div id="case-screen" class="screen">
-            <div class="screen-header">
-                <button class="back-btn" onclick="showScreen('main-screen')">← Назад</button>
-                <h2>🎁 Открытие кейса</h2>
-            </div>
-            <div id="case-animation" class="case-animation">
-                <div class="case-box">📦</div>
-                <div class="progress-bar">
-                    <div class="progress-fill"></div>
-                </div>
-            </div>
-            <div id="case-result" class="case-result hidden">
-                <div id="result-weapon" class="result-weapon"></div>
-                <button class="btn-primary" onclick="openCase()">Открыть еще (100 💰)</button>
-                <button class="btn-secondary" onclick="showScreen('main-screen')">На главную</button>
-            </div>
-        </div>
-        
-        <!-- Экран инвентаря -->
-        <div id="inventory-screen" class="screen">
-            <div class="screen-header">
-                <button class="back-btn" onclick="showScreen('main-screen')">← Назад</button>
-                <h2>🎒 Инвентарь</h2>
-            </div>
-            <div class="inventory-filters">
-                <button class="filter-btn active" onclick="filterInventory('all')">Все</button>
-                <button class="filter-btn" onclick="filterInventory('common')">Common</button>
-                <button class="filter-btn" onclick="filterInventory('uncommon')">Uncommon</button>
-                <button class="filter-btn" onclick="filterInventory('rare')">Rare</button>
-                <button class="filter-btn" onclick="filterInventory('epic')">Epic</button>
-                <button class="filter-btn" onclick="filterInventory('legendary')">Legendary</button>
-                <button class="filter-btn" onclick="filterInventory('ancient')">Ancient</button>
-            </div>
-            <div id="inventory-list" class="inventory-list"></div>
-        </div>
-        
-        <!-- Экран магазина -->
-        <div id="shop-screen" class="screen">
-            <div class="screen-header">
-                <button class="back-btn" onclick="showScreen('main-screen')">← Назад</button>
-                <h2>🏪 Магазин</h2>
-            </div>
-            <div id="shop-list" class="shop-list"></div>
-        </div>
-        
-        <!-- Экран апгрейда -->
-        <div id="upgrade-screen" class="screen">
-            <div class="screen-header">
-                <button class="back-btn" onclick="showScreen('main-screen')">← Назад</button>
-                <h2>⬆️ Апгрейд</h2>
-            </div>
-            <div class="upgrade-info">
-                <p>Объедините 3 одинаковых предмета в 1 предмет следующей редкости!</p>
-            </div>
-            <div id="upgrade-list" class="upgrade-list"></div>
-        </div>
-        
-        <!-- Экран профиля -->
-        <div id="profile-screen" class="screen">
-            <div class="screen-header">
-                <button class="back-btn" onclick="showScreen('main-screen')">← Назад</button>
-                <h2>👤 Профиль</h2>
-            </div>
-            <div id="profile-content" class="profile-content"></div>
+
+            <!-- Другие экраны... -->
         </div>
     </div>
-    
+
     <!-- Модальное окно -->
     <div id="modal" class="modal hidden">
-        <div class="modal-content">
-            <div id="modal-body"></div>
+        <div class="modal-backdrop" onclick="closeModal()"></div>
+        <div class="modal-container">
+            <div class="modal-header">
+                <h3 id="modal-title"></h3>
+                <button class="modal-close" onclick="closeModal()">✕</button>
+            </div>
+            <div id="modal-content" class="modal-body"></div>
         </div>
     </div>
-    
+
+    <!-- Тосты -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <script src="api.js"></script>
     <script src="app.js"></script>
 </body>
 </html>
