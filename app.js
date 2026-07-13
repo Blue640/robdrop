@@ -408,4 +408,17 @@ function init() {
     // Устанавливаем имя пользователя
     const user = tg.initDataUnsafe?.user;
     if (user) {
-        document.getElementById('user
+        document.getElementById('user-name').textContent = user.first_name || 'Игрок';
+    }
+    
+    // Обработка кнопки "Назад" в Telegram
+    tg.BackButton.onClick(() => {
+        const activeScreen = document.querySelector('.screen.active');
+        if (activeScreen && activeScreen.id !== 'main-screen') {
+            showScreen('main-screen');
+        }
+    });
+}
+
+// Запуск
+init();
